@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="uz" data-plan="free">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hisobot Pro Max</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Kunlik hisobot</h1><button class="badge" data-act="plans" id="planBadge">BEPUL</button></div>
+    <div class="datebar">
+      <button class="nav" data-act="prev" aria-label="Oldingi kun">&#8249;</button>
+      <div class="label">
+        <div class="day" id="dayLabel"></div>
+        <div class="sub" id="daySub"></div>
+      </div>
+      <button class="chip-btn" data-act="today" id="todayBtn" hidden>Bugun</button>
+      <button class="nav" data-act="next" id="nextBtn" aria-label="Keyingi kun">&#8250;</button>
+    </div>
+    <div class="status" id="status" role="status">Saqlash ulanmoqda...</div>
+  </header>
+
+  <div class="banner" id="banner" hidden>
+    <span>Hozir namunaviy ma'lumotlar ko'rinmoqda. O'zingizniki bilan boshlash uchun ularni tozalang.</span>
+    <button data-act="clearex">Namunalarni tozalash</button>
+  </div>
+
+  <div class="hero">
+    <div class="h-top"><span class="h-k" id="heroK">Bugungi sof tushum</span><button class="h-edit" data-act="goal" id="goalBtn">Reja</button></div>
+    <div class="h-val num" id="heroVal"></div>
+    <div class="h-bar"><div class="h-fill" id="heroFill"></div></div>
+    <div class="h-meta"><span id="heroPct"></span><span id="heroLeft"></span></div>
+  </div>
+
+  <div class="panel">
+    <div class="fields">
+      <div class="fld">
+        <label for="amount">Summa</label>
+        <div class="box"><input id="amount" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">so'm</span></div>
+      </div>
+      <div class="fld">
+        <label for="note">Izoh</label>
+        <div class="box"><input id="note" type="text" autocomplete="off" maxlength="60" placeholder="Mijoz yoki raqam"></div>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+  <div class="insights" id="insights"></div>
+
+  <section id="plans">
+    <h2>Tariflar <span class="hint" id="planNow"></span></h2>
+    <div class="plans" id="planCards"></div>
+    <div class="lic" id="authBox">
+      <h3>Hisobingiz</h3>
+      <div class="lic-status" id="authStatus"></div>
+      <div class="btns">
+        <button class="btn" data-act="signin" id="signInBtn" hidden>Gmail bilan kirish</button>
+        <button class="btn alt" data-act="signout" id="signOutBtn" hidden>Chiqish</button>
+        <a class="btn alt" id="tgLink" href="#" target="_blank" rel="noopener" hidden>Telegramda yozish</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="adSec" hidden>
+    <div id="adBox"></div>
+  </section>
+
+  <section id="cbSec" hidden>
+    <h2>Qayta qo'ng'iroq <span class="hint" id="cbHint"></span></h2>
+    <ul class="list" id="cbList"></ul>
+  </section>
+
+  <section>
+    <h2>Soatlar bo'yicha <span class="hint">tanlangan kun</span></h2>
+    <div id="hourChart"></div>
+  </section>
+
+  <section>
+    <h2>So'nggi 7 kun <span class="hint" id="weekHint"></span></h2>
+    <div id="weekChart"></div>
+  </section>
+
+  <section>
+    <h2>Haftalik tahlil <span class="hint">oxirgi 7 kun</span></h2>
+    <div class="card" id="weekAnalysis"></div>
+  </section>
+
+  <section>
+    <h2><span id="logTitle">Bugungi yozuvlar</span> <span class="hint" id="logHint"></span></h2>
+    <div id="log"></div>
+  </section>
+
+  <section>
+    <h2>Hisobot</h2>
+    <pre class="report" id="report"></pre>
+    <div class="btns">
+      <button class="btn" data-act="copy">Nusxalash</button>
+      <button class="btn alt" data-act="csv" id="csvBtn" hidden>Excel uchun yuklab olish</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Kunlar jadvali</h2>
+    <div class="hist" id="hist"></div>
+    <div class="insights" id="sums"></div>
+  </section>
+
+  <details id="settings">
+    <summary>Sozlamalar</summary>
+    <div class="set-body">
+      <div id="ownerLogin" hidden>
+        <h3>Egasi kirishi (Gmail ulanmaguncha shu qurilmada)</h3>
+        <div class="row">
+          <div class="fld"><label for="ownPw">Egasi paroli</label><div class="box"><input id="ownPw" type="password" autocomplete="off"></div></div>
+          <button class="btn" data-act="ownlogin">Kirish</button>
+        </div>
+      </div>
+      <div id="ownerSet" hidden>
+        <div id="grantBox" hidden>
+          <h3>Obuna berish (Gmail bo'yicha, faqat egasi ko'radi)</h3>
+          <div class="row" style="margin-top:10px">
+            <div class="fld"><label for="gMail">Mijozning Gmail manzili</label><div class="box"><input id="gMail" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ism@gmail.com"></div></div>
+            <div class="fld" style="flex:0 1 120px"><label for="gDays">Necha kun</label><div class="box"><input id="gDays" type="text" inputmode="numeric" autocomplete="off" value="30"></div></div>
+          </div>
+          <div class="btns" style="margin:10px 0 6px">
+            <button class="btn" data-act="grantpro">Pro berish</button>
+            <button class="btn" data-act="grantmax">Max berish</button>
+          </div>
+          <div class="hint" style="font-size:13px;color:var(--muted)">Necha kun maydonini bo'sh qoldirsangiz, obuna muddatsiz bo'ladi.</div>
+          <ul class="plist" id="subList"></ul>
+        </div>
+        <h3 style="margin-top:14px">Tarif ko'rinishi (faqat shu qurilmada)</h3>
+        <div class="btns" id="planBtns" style="margin:10px 0 14px">
+          <button class="btn alt" data-act="setplan" data-plan="free">Bepul</button>
+          <button class="btn alt" data-act="setplan" data-plan="pro">Pro</button>
+          <button class="btn alt" data-act="setplan" data-plan="max">Max</button>
+        </div>
+        <div class="row">
+          <div class="fld"><label for="proIn">Pro narxi (oyiga)</label><div class="box"><input id="proIn" type="text" inputmode="numeric" autocomplete="off"><span class="unit">so'm</span></div></div>
+          <div class="fld"><label for="maxIn">Max narxi (oyiga)</label><div class="box"><input id="maxIn" type="text" inputmode="numeric" autocomplete="off"><span class="unit">so'm</span></div></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="fld"><label for="tgIn">Telegram nomingiz</label><div class="box"><input id="tgIn" type="text" autocomplete="off" maxlength="40" placeholder="@nom"></div></div>
+          <button class="btn" data-act="saveprices">Saqlash</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+          <h3>Reklama joyi (faqat Bepul tarifda ko'rinadi)</h3>
+          <div class="fld"><label for="adT">Sarlavha</label><div class="box"><input id="adT" type="text" autocomplete="off" maxlength="60"></div></div>
+          <div class="fld"><label for="adX">Matn</label><div class="box"><input id="adX" type="text" autocomplete="off" maxlength="160"></div></div>
+          <div class="row">
+            <div class="fld"><label for="adL">Havola (https:// bilan)</label><div class="box"><input id="adL" type="text" autocomplete="off" inputmode="url" placeholder="https://"></div></div>
+            <button class="btn" data-act="savead">Reklamani saqlash</button>
+          </div>
+        </div>
+        <button class="btn alt" id="ownOut" data-act="ownlogout" style="align-self:flex-start;margin-top:14px">Egasi rejimidan chiqish</button>
+      </div>
+      <div class="fld">
+        <label for="goalIn">Kunlik reja (sof tushum)</label>
+        <div class="row">
+          <div class="box" style="flex:1 1 160px;min-width:0"><input id="goalIn" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">so'm</span></div>
+          <button class="btn" data-act="savegoal">Saqlash</button>
+        </div>
+      </div>
+      <div>
+        <h3>Tez sotiladigan mahsulotlar</h3>
+        <ul class="plist" id="plist"></ul>
+      </div>
+      <div class="row">
+        <div class="fld"><label for="pname">Nomi</label><div class="box"><input id="pname" type="text" autocomplete="off" maxlength="30" placeholder="Masalan, PS5 1 soat"></div></div>
+        <div class="fld"><label for="pprice">Narxi</label><div class="box"><input id="pprice" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">so'm</span></div></div>
+        <button class="btn" data-act="addprod">Qo'shish</button>
+      </div>
+    </div>
+  </details>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
