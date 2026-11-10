@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <title>Hisobot — kunlik savdo va qo‘ng‘iroqlar</title>
+  <style>
+    :root{color-scheme:light;--bg:#f3f5f8;--card:#fff;--ink:#172033;--muted:#667085;--line:#e4e8ef;--blue:#2457d6;--green:#14804a;--red:#c13f45;--amber:#9a6400;--shadow:0 10px 30px #1720330b;font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid #7ba2ff;outline-offset:2px}.wrap{max-width:760px;margin:auto;padding:24px 16px 60px;display:grid;gap:16px}.head{display:flex;justify-content:space-between;align-items:center;gap:12px}.brand h1{font-size:23px;margin:0;letter-spacing:-.03em}.brand p{margin:3px 0 0;color:var(--muted);font-size:13px}.local{border:1px solid #b9dfc9;background:#eaf7ef;color:#17663c;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;white-space:nowrap}.date-card,.card,.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}.date-card{padding:15px;display:flex;align-items:center;gap:12px}.date-title{flex:1;min-width:0}.date-title strong{display:block;font-size:20px}.date-title span{color:var(--muted);font-size:13px}.nav,.today{height:42px;border:1px solid var(--line);background:#fff;border-radius:11px;padding:0 13px;color:var(--ink);font-weight:650}.nav{width:44px;padding:0;font-size:22px}.nav:disabled{opacity:.4;cursor:default}.hero{background:#101827;color:white;border-radius:20px;padding:20px;box-shadow:var(--shadow)}.hero-label{color:#bdc8dc;font-size:14px}.hero-amount{font-size:clamp(30px,8vw,42px);font-weight:800;letter-spacing:-.04em;margin:3px 0 14px;overflow-wrap:anywhere}.progress{height:8px;background:#ffffff25;border-radius:99px;overflow:hidden}.progress>i{display:block;height:100%;width:0;background:#75a4ff;border-radius:inherit;transition:width .2s}.goal-row{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#c4cce0;font-size:13px;margin-top:10px}.goal-control{display:flex;gap:7px;align-items:center}.goal-control input{width:120px;background:#ffffff12;border:1px solid #ffffff35;border-radius:9px;color:white;padding:7px 9px}.goal-control button{border:0;border-radius:9px;background:#fff;color:#172033;font-weight:700;padding:8px 11px}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.stat{padding:14px;min-width:0}.stat span{font-size:12px;color:var(--muted);display:block}.stat strong{font-size:22px;display:block;margin-top:4px;overflow-wrap:anywhere}.stat small{color:var(--muted)}.card{padding:17px}.card h2{font-size:17px;margin:0 0 13px;letter-spacing:-.01em}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:6px;min-width:0}.field label{font-size:13px;font-weight:650;color:#465166}.field input,.field select{width:100%;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)}.field.full{grid-column:1/-1}.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:13px}.action{min-height:46px;border:0;border-radius:11px;color:white;font-weight:700;padding:8px}.action.sale{background:var(--blue)}.action.refund{background:var(--red)}.action.answered{background:var(--green)}.action.missed{background:var(--amber)}.helper{color:var(--muted);font-size:12px;margin:11px 0 0}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.section-head h2{margin:0}.plain-btn{border:1px solid var(--line);border-radius:9px;background:white;padding:8px 11px;font-weight:650;color:var(--ink)}.list{list-style:none;padding:0;margin:12px 0 0}.entry{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line);min-width:0}.entry:first-child{border-top:0}.entry-time{font-size:12px;color:var(--muted);width:45px;flex:none}.tag{border-radius:999px;padding:4px 8px;font-size:11px;font-weight:750;flex:none}.tag.sale{background:#e8efff;color:#234fb8}.tag.refund{background:#fff0ef;color:#a52f35}.tag.answered{background:#e8f6ed;color:#17663c}.tag.missed{background:#fff4db;color:#805300}.entry-text{flex:1;min-width:0}.entry-name{font-weight:650;overflow-wrap:anywhere}.entry-amount{font-size:13px;color:var(--muted)}.delete{width:36px;height:36px;border:0;border-radius:9px;background:transparent;color:#727b8d;font-size:20px}.empty{color:var(--muted);padding:17px 0;text-align:center}.chart{display:flex;align-items:end;gap:8px;height:130px;padding:8px 0 0}.bar-wrap{height:100%;display:flex;flex:1;min-width:0;flex-direction:column;justify-content:end;align-items:center;gap:5px}.bar-value{font-size:10px;color:var(--muted);height:14px;white-space:nowrap}.bar{width:min(100%,36px);min-height:2px;background:#cbd7f5;border-radius:6px 6px 2px 2px}.bar.today{background:var(--blue)}.bar-label{font-size:10px;color:var(--muted)}.report{white-space:pre-wrap;background:#f8f9fb;border:1px solid var(--line);border-radius:11px;padding:13px;margin:12px 0 0;font:14px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.status{min-height:20px;color:var(--muted);font-size:13px}.foot{color:var(--muted);font-size:12px;text-align:center;padding:3px 4px}@media(max-width:520px){.wrap{padding:17px 12px 40px;gap:12px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.actions{grid-template-columns:repeat(2,1fr)}.stats{gap:7px}.stat{padding:11px}.stat strong{font-size:18px}.date-card{padding:11px}.goal-row{align-items:flex-start;flex-direction:column}.goal-control{width:100%}.goal-control input{flex:1;max-width:180px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <div class="brand"><h1>Kunlik hisobot</h1><p>Savdo va mijozlar bilan aloqa</p></div>
+      <span class="local" title="Ma’lumotlar faqat shu brauzerda saqlanadi">🔒 Shu qurilmada</span>
+    </header>
+
+    <section class="date-card" aria-label="Sana tanlash">
+      <button class="nav" id="prev" type="button" aria-label="Oldingi kun">‹</button>
+      <div class="date-title"><strong id="dateLabel"></strong><span id="weekday"></span></div>
+      <button class="today" id="today" type="button" hidden>Bugun</button>
+      <button class="nav" id="next" type="button" aria-label="Keyingi kun">›</button>
+    </section>
+
+    <section class="hero" aria-label="Kunlik sof tushum">
+      <div class="hero-label">Sof tushum</div>
+      <div class="hero-amount" id="net">0 so‘m</div>
+      <div class="progress" role="progressbar" aria-label="Kunlik reja bajarilishi" aria-valuemin="0" aria-valuemax="100"><i id="progress"></i></div>
+      <div class="goal-row"><span id="goalText">Kunlik reja belgilanmagan</span><div class="goal-control"><label for="goal">Reja</label><input id="goal" type="number" min="0" step="1000" inputmode="numeric" placeholder="so‘m"><button id="saveGoal" type="button">Saqlash</button></div></div>
+    </section>
+
+    <section class="stats" aria-label="Kunlik ko‘rsatkichlar">
+      <div class="stat"><span>Sotuvlar</span><strong id="sales">0</strong><small id="salesSum">0 so‘m</small></div>
+      <div class="stat"><span>Qaytarishlar</span><strong id="refunds">0</strong><small id="refundSum">0 so‘m</small></div>
+      <div class="stat"><span>Qo‘ng‘iroqlar</span><strong id="calls">0</strong><small id="answerRate">Javob: —</small></div>
+    </section>
+
+    <section class="card">
+      <h2>Yangi yozuv</h2>
+      <div class="form-grid">
+        <div class="field"><label for="amount">Summa (so‘m)</label><input id="amount" type="number" min="0" step="1000" inputmode="numeric" placeholder="Masalan, 50000"></div>
+        <div class="field"><label for="note">Izoh yoki mijoz</label><input id="note" type="text" maxlength="80" autocomplete="off" placeholder="Ixtiyoriy izoh"></div>
+      </div>
+      <div class="actions" aria-label="Yozuv turi">
+        <button class="action sale" data-kind="sale" type="button">＋ Sotuv</button>
+        <button class="action refund" data-kind="refund" type="button">↩ Qaytarish</button>
+        <button class="action answered" data-kind="answered" type="button">✓ Javob berildi</button>
+        <button class="action missed" data-kind="missed" type="button">! Javobsiz</button>
+      </div>
+      <p class="helper">Sotuv va qaytarish uchun musbat summa kiriting. Qo‘ng‘iroqqa izoh/telefon raqami qo‘shish mumkin.</p>
+    </section>
+
+    <section class="card">
+      <div class="section-head"><h2 id="logTitle">Bugungi yozuvlar</h2><span id="entryCount" class="helper"></span></div>
+      <div id="entries"></div>
+    </section>
+
+    <section class="card">
+      <h2>Oxirgi 7 kun</h2>
+      <div class="chart" id="chart" aria-label="Kunlik sof tushum grafigi"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-head"><h2>Hisobot</h2></div>
+      <pre class="report" id="report"></pre>
+      <div class="tools"><button class="plain-btn" id="copy" type="button">Hisobotni nusxalash</button><button class="plain-btn" id="csv" type="button">CSV yuklab olish</button></div>
+    </section>
+    <div class="status" id="status" role="status" aria-live="polite">Yozuvlar ushbu brauzerda saqlanadi.</div>
+    <footer class="foot">Ma’lumotlaringizni yo‘qotmaslik uchun CSV nusxasini vaqti-vaqti bilan yuklab oling.</footer>
+  </main>
+<script>
+(function(){
+  'use strict';
+  var KEY='hisobot-yangi:v1';
+  var labels={sale:'Sotuv',refund:'Qaytarish',answered:'Javob berildi',missed:'Javobsiz'};
+  var days=['Yakshanba','Dushanba','Seshanba','Chorshanba','Payshanba','Juma','Shanba'];
+  var months=['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+  var store=load(), selected=todayKey();
+  var $=function(id){return document.getElementById(id);};
+  function localDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function todayKey(){return localDate(new Date());}
+  function fromKey(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2],12);}
+  function move(s,n){var d=fromKey(s);d.setDate(d.getDate()+n);return localDate(d);}
+  function fmt(n){return new Intl.NumberFormat('uz-UZ').format(Math.round(Number(n)||0));}
+  function money(n){return fmt(n)+' so‘m';}
+  function load(){try{var x=JSON.parse(localStorage.getItem(KEY)||'{}');return {goal:Number.isSafeInteger(x.goal)&&x.goal>=0?x.goal:0,entries:x.entries&&typeof x.entries==='object'?x.entries:{}};}catch(e){return {goal:0,entries:{}};}}
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(store));$('status').textContent='Saqlandi — '+new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});}catch(e){$('status').textContent='Saqlab bo‘lmadi. Brauzer xotirasi to‘lgan bo‘lishi mumkin; CSV nusxasini oling.';}}
+  function listFor(day){return Array.isArray(store.entries[day])?store.entries[day]:[];}
+  function getStats(list){var s={sales:0,refunds:0,saleSum:0,refundSum:0,answered:0,missed:0};list.forEach(function(e){if(e.kind==='sale'){s.sales++;s.saleSum+=e.amount||0;}else if(e.kind==='refund'){s.refunds++;s.refundSum+=e.amount||0;}else if(e.kind==='answered')s.answered++;else if(e.kind==='missed')s.missed++;});s.net=s.saleSum-s.refundSum;s.calls=s.answered+s.missed;s.rate=s.calls?Math.round(s.answered/s.calls*100):null;return s;}
+  function node(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;}
+  function reportText(s){var d=fromKey(selected),lines=['Kunlik hisobot — '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear(),'','Sotuvlar: '+s.sales+' ta ('+money(s.saleSum)+')','Qaytarishlar: '+s.refunds+' ta ('+money(s.refundSum)+')','Sof tushum: '+money(s.net),'','Qo‘ng‘iroqlar: '+s.calls,'Javob berildi: '+s.answered,'Javobsiz: '+s.missed];if(s.rate!==null)lines.push('Javob berish darajasi: '+s.rate+'%');if(store.goal)lines.push('Kunlik reja: '+money(store.goal)+' ('+Math.max(0,Math.round(s.net/store.goal*100))+'%)');return lines.join('\n');}
+  function renderEntries(list){var root=$('entries');root.replaceChildren();$('entryCount').textContent=list.length?list.length+' ta':'';if(!list.length){root.appendChild(node('div','empty','Bu kunda yozuv yo‘q. Yuqoridagi tugmalardan boshlang.'));return;}var ul=node('ul','list');list.slice().reverse().forEach(function(e){var li=node('li','entry'),date=new Date(e.ts),time=node('span','entry-time',date.toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})),tag=node('span','tag '+e.kind,labels[e.kind]||'Yozuv'),text=node('div','entry-text'),name=node('div','entry-name',e.note||labels[e.kind]||'Yozuv');text.appendChild(name);if(e.amount)text.appendChild(node('div','entry-amount',money(e.amount)));var del=node('button','delete','×');del.type='button';del.setAttribute('aria-label','Yozuvni o‘chirish');del.addEventListener('click',function(){store.entries[selected]=listFor(selected).filter(function(x){return x.id!==e.id;});persist();render();});li.append(time,tag,text,del);ul.appendChild(li);});root.appendChild(ul);}
+  function renderChart(){var root=$('chart');root.replaceChildren();var keys=[];for(var i=6;i>=0;i--)keys.push(move(todayKey(),-i));var vals=keys.map(function(k){return getStats(listFor(k)).net;});var max=Math.max(0,...vals);if(max===0)max=1;keys.forEach(function(k,i){var w=node('div','bar-wrap'),val=node('span','bar-value',vals[i]?fmt(vals[i]):''),bar=node('i','bar'+(k===todayKey()?' today':''));bar.style.height=Math.max(vals[i]>0?4:2,Math.max(0,vals[i])/max*82)+'px';bar.title=k+' — '+money(vals[i]);var dt=fromKey(k);w.append(val,bar,node('span','bar-label',String(dt.getDate())+' '+months[dt.getMonth()].slice(0,3)));root.appendChild(w);});}
+  function render(){var d=fromKey(selected),isToday=selected===todayKey(),list=listFor(selected),s=getStats(list);$('dateLabel').textContent=d.getDate()+'-'+months[d.getMonth()];$('weekday').textContent=(isToday?'Bugun, ':'')+days[d.getDay()]+' · '+d.getFullYear();$('prev').disabled=false;$('next').disabled=isToday||selected>todayKey();$('today').hidden=isToday;$('logTitle').textContent=isToday?'Bugungi yozuvlar':'Yozuvlar';$('net').textContent=money(s.net);$('sales').textContent=s.sales+' ta';$('salesSum').textContent=money(s.saleSum);$('refunds').textContent=s.refunds+' ta';$('refundSum').textContent=money(s.refundSum);$('calls').textContent=s.calls+' ta';$('answerRate').textContent='Javob: '+(s.rate===null?'—':s.rate+'%');$('goal').value=store.goal||'';var pct=store.goal?Math.max(0,Math.round(s.net/store.goal*100)):0;$('progress').style.width=Math.min(pct,100)+'%';$('goalText').textContent=store.goal?(pct+'% bajarildi · '+(s.net>=store.goal?'Reja bajarildi':money(store.goal-Math.max(s.net,0))+' qoldi')):'Kunlik reja belgilanmagan';document.querySelector('.progress').setAttribute('aria-valuenow',String(Math.min(pct,100)));$('report').textContent=reportText(s);renderEntries(list);renderChart();}
+  function add(kind){var amount=Number($('amount').value),needsAmount=kind==='sale'||kind==='refund';if(needsAmount&&(!Number.isSafeInteger(amount)||amount<=0)){ $('status').textContent='Sotuv yoki qaytarish uchun musbat, butun summa kiriting.';$('amount').focus();return;}if(!needsAmount)amount=0;var note=$('note').value.trim();var item={id:(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2),kind:kind,amount:amount,ts:Date.now(),note:note};store.entries[selected]=listFor(selected).concat(item);persist();$('amount').value='';$('note').value='';render();}
+  document.querySelectorAll('[data-kind]').forEach(function(b){b.addEventListener('click',function(){add(b.dataset.kind);});});
+  $('prev').addEventListener('click',function(){selected=move(selected,-1);render();});$('next').addEventListener('click',function(){if(selected<todayKey()){selected=move(selected,1);render();}});$('today').addEventListener('click',function(){selected=todayKey();render();});
+  $('saveGoal').addEventListener('click',function(){var n=Number($('goal').value);if(!Number.isSafeInteger(n)||n<0){$('status').textContent='Reja 0 yoki undan katta butun summa bo‘lishi kerak.';return;}store.goal=n;persist();render();});
+  $('copy').addEventListener('click',function(){var text=$('report').textContent;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){$('status').textContent='Hisobot nusxalandi.';},function(){$('status').textContent='Nusxalash uchun hisobot matnini belgilang.';});}else{$('status').textContent='Qurilmangiz nusxalashni qo‘llamaydi; hisobot matnini belgilang.';}});
+  function csvCell(v){var s=String(v==null?'':v);if(/^[=+@\-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+  $('csv').addEventListener('click',function(){var rows=[['Sana','Vaqt','Turi','Summa (so‘m)','Izoh']];Object.keys(store.entries).sort().forEach(function(day){listFor(day).slice().sort(function(a,b){return a.ts-b.ts;}).forEach(function(e){rows.push([day,new Date(e.ts).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'}),labels[e.kind]||'Yozuv',e.amount||0,e.note||'']);});});if(rows.length===1){$('status').textContent='CSV yuklab olish uchun hali yozuv yo‘q.';return;}var blob=new Blob(['\ufeff'+rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='hisobot-'+todayKey()+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);$('status').textContent='CSV fayli yuklab olindi.';});
+  render();
+})();
+</script>
+</body>
+</html>
