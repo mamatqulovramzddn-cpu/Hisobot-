@@ -13,8 +13,7 @@ and sync individual entries to `users/{uid}/entries/{entryId}`.
 4. Review and deploy rules with `firebase deploy --only firestore:rules --project YOUR_PROJECT_ID`.
 5. Deploy Hosting only when authorized: `firebase deploy --only hosting --project YOUR_PROJECT_ID`.
 
-This repository does not contain the project's real Firebase Web configuration.
-Until it is supplied, guest mode works but Gmail, grants and cloud sync do not.
+The existing project's public Web configuration was recovered from the user's earlier Hisobot login file and is now in config.js. Login, grants and cloud writes still require the authorized domain and matching deployed rules to be verified.
 No Firebase deployment was performed as part of the repair.
 
 ## Preserving existing records
