@@ -1,85 +1,6 @@
-/* =====================================================================
-   HISOBOT PRO MAX: script.js
-   Bu fayl ichida 3 narsa bor: 1) ISHGA TUSHIRISH KO'RSATMASI, 2) SOZLAMALAR
-   (faqat shu joyni to'ldirasiz), 3) ilovaning o'zi.
-
-   ---------------------------------------------------------------------
-   1) ISHGA TUSHIRISH (Gmail orqali Pro/Max berish uchun, hammasi bepul)
-   ---------------------------------------------------------------------
-   Gmail bilan kirish faqat INTERNETDAGI saytda ishlaydi (fayl sifatida
-   ochilganda ishlamaydi). Sozlanmagan bo'lsa, sayt "mahalliy rejim"da
-   ishlaydi: Sozlamalar ichida egasi paroli bilan shu qurilmada Max/Pro ni
-   ko'rish va ishlatish mumkin.
-
-   a) https://console.firebase.google.com da loyiha yarating (Add project).
-   b) Build > Authentication > Get started > Sign-in method > Google >
-      Enable > o'z Gmailingizni "support email" qiling > Save.
-   c) Build > Firestore Database > Create database > Production rejimi.
-      Keyin Rules bo'limiga pastdagi QOIDALARNI qo'ying,
-      'sizning_gmailingiz@gmail.com' o'rniga o'z Gmailingizni KICHIK
-      harflarda yozing va Publish bosing.
-   d) Project settings > General > Your apps > Web (</>) > Register app.
-      Ko'rsatilgan firebaseConfig dan apiKey, authDomain, projectId, appId ni
-      pastdagi SOZLAMALAR ga ko'chiring. ownerEmail ga ham o'z Gmailingizni
-      yozing (c bandidagi bilan bir xil).
-   e) Saytni internetga joylang (Netlify Drop: https://app.netlify.com/drop,
-      yoki Firebase Hosting, yoki GitHub Pages). index.html, style.css va
-      script.js ni birga joylang.
-   f) Authentication > Settings > Authorized domains > Add domain: sayt
-      manzilingizni yozing (masalan mening-saytim.netlify.app).
-   g) Saytni oching > Tariflar > "Gmail bilan kirish" (o'z Gmailingiz bilan) >
-      Sozlamalar > "Obuna berish": mijozning Gmailini yozing, necha kun
-      ekanini kiriting (bo'sh = muddatsiz), "Pro berish" yoki "Max berish".
-
-   ---------------------------------------------------------------------
-   FIRESTORE QOIDALARI (Firebase > Firestore > Rules ga shuni qo'ying):
-   ---------------------------------------------------------------------
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-
-       function signedIn() {
-         return request.auth != null && request.auth.token.email_verified == true;
-       }
-
-       // MUHIM: shu yerga o'z Gmail manzilingizni kichik harflarda yozing (pastdagi SOZLAMALAR dagi ownerEmail bilan bir xil)
-       function isOwner() {
-         return signedIn() && request.auth.token.email.lower() == 'sizning_gmailingiz@gmail.com';
-       }
-
-       // Obunalar: har kim faqat o'zining obunasini o'qiydi, yozishni faqat egasi qila oladi
-       match /subscriptions/{email} {
-         allow read: if isOwner() || (signedIn() && request.auth.token.email.lower() == email);
-         allow write: if isOwner();
-       }
-
-       // Hamma ko'radigan sozlamalar (narxlar, Telegram, reklama): yozishni faqat egasi qiladi
-       match /public/{docId} {
-         allow read: if true;
-         allow write: if isOwner();
-       }
-     }
-   }
-
-   ---------------------------------------------------------------------
-   Muhim: obunani faqat ownerEmail Gmaili bera oladi (tekshiruv Firebase
-   qoidalarida, serverda). Kunlik yozuvlar hozircha har bir qurilmada alohida
-   saqlanadi. Pro/Max imkoniyatlari brauzerda hisoblanadi.
-   ===================================================================== */
-
-/* ===================== 2) SOZLAMALAR (shu yerni to'ldiring) ===================== */
-window.HPM_CONFIG = {
-  /* Sizning (egasining) Google/Gmail manzilingiz. Faqat shu manzil obuna bera oladi. */
-  ownerEmail: 'SIZNING_GMAILINGIZ@gmail.com',
-
-  /* Firebase loyihangizdan ko'chirib olingan qiymatlar (yuqoridagi ko'rsatmaning d bandiga qarang) */
-  firebase: {
-    apiKey: 'YOUR_API_KEY',
-    authDomain: 'YOUR_PROJECT.firebaseapp.com',
-    projectId: 'YOUR_PROJECT',
-    appId: 'YOUR_APP_ID'
-  }
-};
+/* Hisobot Pro Max. Public Firebase web config lives in config.js.
+   See README.md for setup, migration, limitations and verification.
+   Access controls are in firestore.rules; deploy them before enabling login. */
 
 /* ===================== 3) ILOVA ===================== */
 (function () {
@@ -105,6 +26,8 @@ window.HPM_CONFIG = {
   var settings = { goal: 0, products: [], plan: 'free', proPrice: 39999, maxPrice: 59999, tg: TG_DEFAULT };
   var selected = today();
   var writing = Promise.resolve();
+  var scope = 'guest', dataOff = null, settingsOff = null, pending = {}, syncing = false;
+  var storageError = false, generation = 0, settingsDirty = false;
   var lastRemoved = null;
   var toastTimer = null;
 
@@ -125,8 +48,14 @@ window.HPM_CONFIG = {
   function hhmm(ts) { var d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
   function dots(s) { var p = s.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function rid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-  function digits(v) { var n = parseInt(String(v || '').replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n; }
+  function rid() { return window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2); }
+  function digits(v) {
+    var text = String(v == null ? '' : v).replace(/[ \u00a0\u202f]/g, '');
+    if (!text) return 0;
+    if (!/^\d+$/.test(text)) return NaN;
+    var n = Number(text);
+    return Number.isSafeInteger(n) && n <= 1000000000000 ? n : NaN;
+  }
   function entriesOf(date) { return days[date] || []; }
 
   function stats(entries) {
@@ -154,40 +83,78 @@ window.HPM_CONFIG = {
 
   function setStatus(t) { $('status').textContent = t || ''; }
 
-  /* storage */
-  function save(date, entries) {
-    days[date] = entries;
-    render();
-    if (db) {
-      writing = writing
-        .then(function () { return db.doc('days/' + date).set({ date: date, entries: entries }); })
-        .catch(function () { setStatus('Saqlab bo’lmadi. Internetni tekshirib, qayta urinib ko’ring.'); });
-    } else {
-      try { localStorage.setItem(LS + date, JSON.stringify(entries)); } catch (e) {}
+  /* Local-first storage. Each operation has its own cloud document. */
+  function cacheKey() { return 'hpm:v2:' + scope; }
+  function persist() {
+    try {
+      localStorage.setItem(cacheKey(), JSON.stringify({ days: days, settings: settings, pending: pending, settingsDirty: settingsDirty }));
+      storageError = false;
+      return true;
+    } catch (e) {
+      storageError = true;
+      setStatus('Saqlanmadi! Xotira yopiq yoki to’lgan. JSON zaxira yuklab oling.');
+      return false;
     }
   }
+  function save(date, entries) {
+    if (scope !== 'guest') {
+      var old = entriesOf(date), next = new Map(entries.map(function (e) { return [e.id, e]; }));
+      old.forEach(function (e) { if (!next.has(e.id)) pending[e.id] = { date: date, entry: null, version: rid() }; });
+      entries.forEach(function (e) {
+        var prev = old.find(function (v) { return v.id === e.id; });
+        if (JSON.stringify(prev) !== JSON.stringify(e)) pending[e.id] = { date: date, entry: e, version: rid() };
+      });
+    }
+    days[date] = entries;
+    persist(); render(); flushPending();
+  }
+  function flushPending() {
+    if (!db || syncing || (!Object.keys(pending).length && !settingsDirty)) return;
+    syncing = true;
+    var activeScope = scope, token = generation, target = db, queue = Object.keys(pending).map(function (id) { return { id: id, op: pending[id] }; });
+    var settingsVersion = settingsDirty, settingsBody = { goal: settings.goal, products: settings.products };
+    writing = queue.reduce(function (chain, item) {
+      return chain.then(function () {
+        if ((scope !== activeScope || generation !== token)) return;
+        var ref = target.collection('entries').doc(item.id), op = item.op;
+        return (op.entry ? ref.set({ date: op.date, entry: op.entry }) : ref.delete()).then(function () {
+          if (scope === activeScope && generation === token && pending[item.id] && pending[item.id].version === op.version) {
+            delete pending[item.id]; persist();
+          }
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      if (scope !== activeScope || generation !== token || !settingsVersion) return;
+      return target.doc('settings/main').set(settingsBody).then(function () {
+        if (scope === activeScope && generation === token && settingsDirty === settingsVersion) { settingsDirty = false; persist(); }
+      });
+    }).then(function () {
+      if ((scope !== activeScope || generation !== token)) return;
+      syncing = false;
+      if (Object.keys(pending).length || settingsDirty) flushPending();
+      else if (!storageError) setStatus('Bulutga saqlandi.');
+    }).catch(function () {
+      if ((scope !== activeScope || generation !== token)) return;
+      syncing = false;
+      setStatus('Bulutga saqlanmadi. Yozuvlar shu qurilmada; qayta urinish uchun tugmani bosing.');
+    });
+  }
   function saveSettings() {
-    render();
+    if (scope !== 'guest') settingsDirty = rid();
+    var ok = persist(); render();
     if (fbOn && owner && fs) {
-      fs.doc('public/settings').set({
-        proPrice: settings.proPrice, maxPrice: settings.maxPrice, tg: settings.tg,
+      fs.doc('public/settings').set({ proPrice: settings.proPrice, maxPrice: settings.maxPrice, tg: settings.tg,
         adTitle: settings.adTitle || '', adText: settings.adText || '', adLink: settings.adLink || ''
-      }, { merge: true }).catch(function () { setStatus('Narx va reklamani hamma uchun saqlab bo’lmadi (egasi ruxsati?).'); });
+      }, { merge: true }).catch(function () { setStatus('Umumiy sozlamalar bulutga saqlanmadi.'); });
     }
-    if (db) {
-      var body = { goal: settings.goal, products: settings.products, plan: settings.plan, proPrice: settings.proPrice, maxPrice: settings.maxPrice, tg: settings.tg, adTitle: settings.adTitle || '', adText: settings.adText || '', adLink: settings.adLink || '' };
-      writing = writing
-        .then(function () { return db.doc('settings/main').set(body); })
-        .catch(function () { setStatus('Sozlamalarni saqlab bo’lmadi.'); });
-    } else {
-      try { localStorage.setItem(LSS, JSON.stringify(settings)); } catch (e) {}
-    }
+    flushPending();
+    return ok;
   }
   function normSettings(v) {
     v = v || {};
     return {
-      goal: +v.goal || 0,
-      products: Array.isArray(v.products) ? v.products : [],
+      goal: Number.isSafeInteger(v.goal) && v.goal >= 0 && v.goal <= 1000000000000 ? v.goal : 0,
+      products: Array.isArray(v.products) ? v.products.filter(function (p) { return p && typeof p.id === 'string' && typeof p.name === 'string' && Number.isSafeInteger(p.price) && p.price > 0 && p.price <= 1000000000000; }).slice(0, 1000) : [],
       plan: PLANS.indexOf(v.plan) >= 0 ? v.plan : 'free',
       proPrice: +v.proPrice || 39999,
       maxPrice: +v.maxPrice || 59999,
@@ -251,11 +218,11 @@ window.HPM_CONFIG = {
   function cfgReady() {
     var c = CFG.firebase || {};
     return !!(c.apiKey && c.projectId && String(c.apiKey).indexOf('YOUR_') !== 0 && String(c.projectId).indexOf('YOUR_') !== 0 &&
-      window.firebase && typeof window.firebase.initializeApp === 'function');
+      c.authDomain && c.appId && ownerMail() && window.firebase && typeof window.firebase.initializeApp === 'function');
   }
   function normSub(d) {
     d = d || {};
-    return { plan: d.plan === 'max' ? 'max' : (d.plan === 'pro' ? 'pro' : ''), exp: typeof d.expiresAt === 'string' ? d.expiresAt : '' };
+    return { plan: d.plan === 'max' ? 'max' : (d.plan === 'pro' ? 'pro' : ''), exp: typeof d.expiresAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.expiresAt) ? d.expiresAt : (d.expiresAt ? '0000-00-00' : '') };
   }
   function subLevel() {
     if (!sub || !sub.plan) return 0;
@@ -294,8 +261,9 @@ window.HPM_CONFIG = {
     if (subOff) { subOff(); subOff = null; }
     if (allOff) { allOff(); allOff = null; }
     sub = null; allSubs = [];
-    if (!u || !u.email) { user = null; owner = false; render(); return; }
-    user = { email: String(u.email).toLowerCase(), name: u.displayName || '' };
+    if (!u || !u.email) { user = null; owner = false; switchScope('guest'); render(); return; }
+    user = { uid: u.uid, email: String(u.email).toLowerCase(), name: u.displayName || '' };
+    switchScope(u.uid);
     owner = !!ownerMail() && user.email === ownerMail();
     subOff = fs.collection('subscriptions').doc(user.email).onSnapshot(function (s) {
       sub = s.exists ? normSub(s.data()) : null;
@@ -332,6 +300,7 @@ window.HPM_CONFIG = {
     var email = $('gMail').value.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Gmail manzilini to’g’ri yozing', null, null, 3000); return; }
     var n = digits($('gDays').value);
+    if (!Number.isFinite(n)) { toast('Kun sonini butun musbat raqamda yozing'); return; }
     var exp = n ? shift(today(), Math.min(n, 3650)) : '';
     writeSub(email, plan, exp, (plan === 'max' ? 'Max' : 'Pro') + ' berildi: ' + email);
     $('gMail').value = '';
@@ -377,7 +346,7 @@ window.HPM_CONFIG = {
       else if (sub && sub.plan && sub.exp && sub.exp < today()) st = 'Kirdingiz: ' + user.email + '. Obuna muddati ' + sub.exp + ' kuni tugagan. Yangilash uchun Telegramga yozing.';
       else st = 'Kirdingiz: ' + user.email + '. Tarif: Bepul. Pro yoki Max olish uchun Telegramga yozing va shu Gmail manzilingizni yuboring.';
     } else if (owner) st = 'Egasi rejimi (faqat shu qurilmada): hozir ' + PNAME[cur] + ' ko’rinishi yoqilgan.';
-    else st = 'Gmail bilan kirish hali ulanmagan: script.js boshidagi sozlamalar to’ldirilmagan.';
+    else st = 'Gmail bilan kirish hali ulanmagan: config.js sozlamalari to’ldirilmagan.';
     $('authStatus').textContent = st;
     $('signInBtn').hidden = !fbOn || !!user;
     $('signOutBtn').hidden = !fbOn || !user;
@@ -393,50 +362,89 @@ window.HPM_CONFIG = {
     return '<div class="lock"><div><b>' + PNAME[n] + '</b> tarifda ochiladi<span>' + what + '</span></div><button class="btn alt" data-act="plans">Tariflar</button></div>';
   }
   function loadLocal() {
+    days = {}; pending = {}; settingsDirty = false; lastRemoved = null;
+    settings = normSettings(null);
+    try {
+      var raw = localStorage.getItem(cacheKey());
+      if (raw) {
+        var v = JSON.parse(raw);
+        Object.keys(v.days || {}).forEach(function (date) {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Array.isArray(v.days[date]))
+            days[date] = v.days[date].filter(validEntry);
+        });
+        settings = normSettings(v.settings); pending = v.pending || {}; settingsDirty = v.settingsDirty || false;
+      }
+    } catch (e) { setStatus('Mahalliy zaxirani o’qib bo’lmadi. Eski ma’lumotlar o’chirilmagan.'); }
+  }
+  function validEntry(e) {
+    return e && typeof e.id === 'string' && /^[a-zA-Z0-9_-]{1,120}$/.test(e.id) &&
+      ORDER.indexOf(e.kind) >= 0 && Number.isSafeInteger(e.amount) && e.amount >= 0 &&
+      e.amount <= 1000000000000 && Number.isFinite(e.ts) && (!e.note || typeof e.note === 'string');
+  }
+  function switchScope(next) {
+    if (dataOff) dataOff(); if (settingsOff) settingsOff();
+    dataOff = settingsOff = null; db = null; syncing = false;
+    generation++; scope = next; loadLocal();
+    if (next === 'guest' || !fs) { setStatus('Mehmon rejimi: ma’lumotlar shu brauzerda saqlanadi.'); return; }
+    db = fs.collection('users').doc(next);
+    var activeScope = next, token = generation;
+    dataOff = db.collection('entries').onSnapshot(function (snap) {
+      if ((scope !== activeScope || generation !== token)) return;
+      var map = {};
+      snap.forEach(function (doc) {
+        var v = doc.data();
+        if (validEntry(v.entry) && /^\d{4}-\d{2}-\d{2}$/.test(v.date)) (map[v.date] || (map[v.date] = [])).push(v.entry);
+      });
+      Object.keys(pending).forEach(function (id) {
+        var op = pending[id];
+        var list = (map[op.date] || []).filter(function (e) { return e.id !== id; });
+        if (op.entry) list.push(op.entry);
+        map[op.date] = list;
+      });
+      days = map; persist(); render();
+    }, function () { setStatus('Bulut yozuvlarini o’qib bo’lmadi. Mahalliy nusxa ko’rsatilmoqda.'); });
+    settingsOff = db.doc('settings/main').onSnapshot(function (snap) {
+      if ((scope !== activeScope || generation !== token) || !snap.exists || settingsDirty) return;
+      var v = normSettings(snap.data()); settings.goal = v.goal;
+      settings.products = v.products;
+      persist(); render();
+    }, function () { setStatus('Bulut sozlamalarini o’qib bo’lmadi.'); });
+    flushPending();
+  }
+  function connect() {
+    if (!user) switchScope('guest');
+    render();
+  }
+  function importLegacy() {
+    if (!window.confirm('Eski va mehmon yozuvlari hozirgi hisobga ko’chirilsinmi? Faqat o’zingizniki bo’lsa tasdiqlang.')) return;
+    var imported = {}, guest;
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
-        if (k && k.indexOf(LS) === 0) days[k.slice(LS.length)] = JSON.parse(localStorage.getItem(k)) || [];
+        if (k && /^kunlik-hisobot:\d{4}-\d{2}-\d{2}$/.test(k)) imported[k.slice(LS.length)] = JSON.parse(localStorage.getItem(k));
       }
-      var s = localStorage.getItem(LSS);
-      if (s) settings = normSettings(JSON.parse(s)); else settings.plan = 'free';
-    } catch (e) {}
+      guest = JSON.parse(localStorage.getItem('hpm:v2:guest') || '{}');
+      Object.keys(guest.days || {}).forEach(function (d) { imported[d] = (imported[d] || []).concat(guest.days[d]); });
+      Object.keys(imported).forEach(function (d) {
+        var map = new Map(entriesOf(d).map(function (e) { return [e.id, e]; }));
+        imported[d].filter(validEntry).forEach(function (e) { if (!map.has(e.id)) map.set(e.id, e); });
+        save(d, Array.from(map.values()));
+      });
+      toast(storageError ? 'Saqlanmadi. JSON zaxira oling.' : 'Yozuvlar ko’chirildi. Eski nusxa saqlandi.');
+    } catch (e) { toast('Eski yozuvlarni o’qib bo’lmadi; ular o’chirilmagan.'); }
   }
-
-  function connect() {
-    if (!(window.claude && window.claude.use)) { loadLocal(); setStatus('Hisobot shu brauzerda saqlanadi.'); render(); return; }
-    window.claude.use('downloads').then(function (d) { dl = d; render(); }, function () {});
-    window.claude.use('user').then(function (u) {
-      if (!u) return;
-      Promise.resolve(u.isOwner()).then(function (o) { owner = !!o; render(); });
-    }, function () {});
-    window.claude.use('db').then(function (d) {
-      if (!d) { db = null; loadLocal(); setStatus('Hisobot shu brauzerda saqlanadi.'); render(); return; }
-      db = d;
-      var timer = setTimeout(function () { setStatus('Ma’lumotlarga hozircha ulanib bo’lmadi. Ko’rsatilgani eskirgan bo’lishi mumkin.'); }, 10000);
-      var fail = function () { clearTimeout(timer); setStatus('Saqlash bilan aloqa uzildi. Sahifani qayta oching.'); };
-      db.collection('days').where('date', '>=', shift(today(), -60)).onSnapshot(function (snap) {
-        var m = {};
-        snap.docs.forEach(function (doc) {
-          var v = doc.data() || {};
-          m[doc.id] = Array.isArray(v.entries) ? v.entries : [];
-        });
-        days = m;
-        if (!snap.metadata.fromCache) { clearTimeout(timer); setStatus(''); }
-        render();
-      }, fail);
-      db.doc('settings/main').onSnapshot(function (snap) {
-        settings = normSettings(snap.exists ? snap.data() : null);
-        render();
-      }, function () {});
-    }, function () { db = null; loadLocal(); setStatus('Hisobot shu brauzerda saqlanadi.'); render(); });
+  function downloadFile(filename, data, type) {
+    var url = URL.createObjectURL(new Blob([data], { type: type })), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
   /* actions */
   function addEntry(kind, amountOverride, noteOverride) {
     var isMoney = kind === 'sale' || kind === 'ret';
     var amount = amountOverride != null ? amountOverride : (isMoney ? digits($('amount').value) : 0);
-    var note = (noteOverride != null ? noteOverride : $('note').value).trim();
+    if (!Number.isFinite(amount)) { toast('Summani butun musbat raqamda kiriting'); return; }
+    var note = (noteOverride != null ? noteOverride : $('note').value).trim().slice(0, 60);
     var ts = selected === today() ? Date.now() : parse(selected).getTime() + 12 * 3600 * 1000;
     var entry = { id: rid(), kind: kind, amount: amount, ts: ts };
     if (note) entry.note = note;
@@ -478,7 +486,7 @@ window.HPM_CONFIG = {
   }
   function addProduct() {
     var name = $('pname').value.trim(), price = digits($('pprice').value);
-    if (!name || !price) { toast('Nomi va narxini kiriting', null, null, 2500); return; }
+    if (!name || !Number.isFinite(price) || !price) { toast('Nomi va narxini kiriting', null, null, 2500); return; }
     settings.products = settings.products.concat([{ id: rid(), name: name, price: price }]);
     $('pname').value = ''; $('pprice').value = '';
     saveSettings();
@@ -524,9 +532,8 @@ window.HPM_CONFIG = {
     };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, fb); else fb();
   }
-  function q(v) { v = String(v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function q(v) { v = String(v); if (/^[\s]*[=+@-]/.test(v)) v = "'" + v; return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function exportCsv() {
-    if (!dl) return;
     var rows = [['Sana', 'Vaqt', 'Turi', 'Summa', 'Izoh']];
     Object.keys(days).sort().forEach(function (d) {
       days[d].slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (e) {
@@ -535,12 +542,7 @@ window.HPM_CONFIG = {
     });
     if (rows.length === 1) { toast('Yuklab olish uchun yozuv yo’q', null, null, 2500); return; }
     var data = '﻿' + rows.map(function (r) { return r.map(q).join(','); }).join('\r\n');
-    dl.save({ filename: 'hisobot-' + today() + '.csv', data: data }).then(function () {
-      toast('Fayl saqlandi', null, null, 2200);
-    }, function (e) {
-      if (e && e.code === 'declined') return;
-      toast('Faylni saqlab bo’lmadi', null, null, 2500);
-    });
+    downloadFile('hisobot-' + today() + '.csv', data, 'text/csv;charset=utf-8');
   }
 
   /* charts */
@@ -581,27 +583,29 @@ window.HPM_CONFIG = {
   }
 
   function weekChart() {
-    var t = today(), vals = [], useMoney = false, maxV = 0, i, ds, st;
+    var t = today(), vals = [], useMoney = false, maxV = 0, minV = 0, i, ds, st;
     for (i = 6; i >= 0; i--) {
       ds = shift(t, -i); st = stats(entriesOf(ds));
       if (st.hasMoney) useMoney = true;
       vals.push({ ds: ds, st: st });
     }
-    vals.forEach(function (v) { v.v = useMoney ? v.st.net : v.st.sale; if (v.v > maxV) maxV = v.v; });
+    vals.forEach(function (v) { v.v = useMoney ? v.st.net : v.st.sale; if (v.v > maxV) maxV = v.v; if (v.v < minV) minV = v.v; });
     $('weekHint').textContent = useMoney ? 'sof tushum' : 'sotuvlar soni';
     var any = vals.some(function (v) { return v.st.sale || v.st.ret || v.st.calls; });
     if (!any) return '<div class="empty">Kunlar bo’yicha taqqoslash uchun hozircha yozuv yo’q.</div>';
-    if (maxV <= 0) maxV = 1;
-    var W = 340, H = 150, pt = 18, pb = 22, pl = 6, pr = 6;
+    if (maxV === minV) maxV = minV + 1;
+    var W = 340, H = 150, pt = 18, pb = 34, pl = 6, pr = 6;
     var slot = (W - pl - pr) / 7, bw = Math.min(slot * 0.62, 34), ph = H - pt - pb;
+    function y(v) { return pt + (maxV - v) / (maxV - minV) * ph; }
+    var zero = y(0);
     var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="So’nggi 7 kun">';
-    s += '<line class="grid" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + (pt + ph) + '" y2="' + (pt + ph) + '"></line>';
+    s += '<line class="grid" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + zero + '" y2="' + zero + '"></line>';
     vals.forEach(function (v, k) {
       var x = pl + k * slot + (slot - bw) / 2;
-      var hgt = Math.max((Math.max(v.v, 0) / maxV) * ph, v.v > 0 ? 2 : 0);
+      var hgt = Math.abs(y(v.v) - zero), top = Math.min(y(v.v), zero);
       var cls = v.ds === selected ? 'b-net' : 'b-dim';
-      s += '<rect class="' + cls + '" x="' + x.toFixed(1) + '" y="' + (pt + ph - hgt).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hgt.toFixed(1) + '" rx="3"></rect>';
-      if (v.v > 0) s += '<text class="ax' + (v.ds === selected ? ' axs' : '') + '" x="' + (x + bw / 2).toFixed(1) + '" y="' + (pt + ph - hgt - 4).toFixed(1) + '" text-anchor="middle">' + (useMoney ? short(v.v) : v.v) + '</text>';
+      s += '<rect class="' + cls + '" x="' + x.toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hgt.toFixed(1) + '" rx="3"></rect>';
+      if (v.v !== 0) s += '<text class="ax' + (v.ds === selected ? ' axs' : '') + '" x="' + (x + bw / 2).toFixed(1) + '" y="' + (v.v < 0 ? top + hgt + 12 : top - 4).toFixed(1) + '" text-anchor="middle">' + (useMoney ? short(v.v) : v.v) + '</text>';
       s += '<text class="ax' + (v.ds === selected ? ' axs' : '') + '" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + parse(v.ds).getDate() + '</text>';
     });
     return '<div class="card">' + s + '</svg></div>';
@@ -610,14 +614,16 @@ window.HPM_CONFIG = {
   function weekAnalysis() {
     var t = today(), i, ds, l, st;
     var agg = { sale: 0, ret: 0, ans: 0, miss: 0, net: 0, pending: 0, money: false };
-    var hours = {}, items = {}, best = null, worst = null, active = 0;
+    var compareMoney = false;
+    for (var dayIndex = 0; dayIndex < 7; dayIndex++) if (stats(entriesOf(shift(t, -dayIndex))).hasMoney) compareMoney = true;
+    var hours = {}, items = Object.create(null), best = null, worst = null, active = 0;
     for (i = 0; i < 7; i++) {
       ds = shift(t, -i); l = entriesOf(ds); st = stats(l);
       agg.sale += st.sale; agg.ret += st.ret; agg.ans += st.ans; agg.miss += st.miss; agg.net += st.net; agg.pending += st.pending;
       if (st.hasMoney) agg.money = true;
       if (l.length) {
         active++;
-        var key = st.hasMoney ? st.net : st.sale, rec = { ds: ds, v: key, money: st.hasMoney };
+        var key = compareMoney ? st.net : st.sale, rec = { ds: ds, v: key, money: compareMoney };
         if (!best || key > best.v) best = rec;
         if (!worst || key <= worst.v) worst = rec;
       }
@@ -735,7 +741,7 @@ window.HPM_CONFIG = {
       $('goalBtn').textContent = 'Tariflar';
     } else if (goal) {
       $('heroPct').innerHTML = '<b>' + pct + '%</b> rejadan';
-      $('heroLeft').innerHTML = s.net >= goal ? 'Reja bajarildi' : 'Yana <b>' + money(goal - Math.max(s.net, 0)) + '</b> kerak';
+      $('heroLeft').innerHTML = s.net >= goal ? 'Reja bajarildi' : 'Yana <b>' + money(goal - s.net) + '</b> kerak';
       $('goalBtn').textContent = 'Reja ' + short(goal);
     } else {
       $('heroPct').textContent = 'Kunlik reja belgilanmagan';
@@ -802,7 +808,7 @@ window.HPM_CONFIG = {
     }
 
     $('report').textContent = reportText();
-    $('csvBtn').hidden = !dl;
+    $('csvBtn').hidden = false;
     $('csvBtn').setAttribute('data-act', has(2) ? 'csv' : 'plans');
     $('csvBtn').textContent = has(2) ? 'Excel uchun yuklab olish' : 'Excel yuklab olish (Max tarifda)';
 
@@ -846,6 +852,9 @@ window.HPM_CONFIG = {
     else if (act === 'today') { selected = today(); render(); }
     else if (act === 'pick') { selected = el.getAttribute('data-date'); render(); window.scrollTo(0, 0); }
     else if (act === 'copy') copyReport();
+    else if (act === 'importlegacy') importLegacy();
+    else if (act === 'retry') flushPending();
+    else if (act === 'backup') downloadFile('hisobot-zaxira-' + today() + '.json', JSON.stringify({ days: days, settings: settings }, null, 2), 'application/json');
     else if (act === 'csv') { if (has(2)) exportCsv(); }
     else if (act === 'savead') {
       if (!owner) return;
@@ -854,8 +863,8 @@ window.HPM_CONFIG = {
       settings.adTitle = $('adT').value.trim().slice(0, 60);
       settings.adText = $('adX').value.trim().slice(0, 160);
       settings.adLink = lnk;
-      saveSettings();
-      toast('Reklama saqlandi', null, null, 2000);
+      if (!saveSettings()) return;
+      toast('Reklama shu qurilmada saqlandi', null, null, 2000);
     }
     else if (act === 'plans') { $('plans').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (act === 'setplan') {
@@ -875,11 +884,13 @@ window.HPM_CONFIG = {
     else if (act === 'revoke') revokeSub(el.getAttribute('data-email'));
     else if (act === 'saveprices') {
       if (!owner) return;
-      settings.proPrice = digits($('proIn').value) || settings.proPrice;
-      settings.maxPrice = digits($('maxIn').value) || settings.maxPrice;
+      var pro = digits($('proIn').value), max = digits($('maxIn').value);
+      if (!Number.isFinite(pro) || !Number.isFinite(max) || !pro || !max) { toast('Narxlarni butun musbat raqamda yozing'); return; }
+      settings.proPrice = pro;
+      settings.maxPrice = max;
       settings.tg = $('tgIn').value.trim();
-      saveSettings();
-      toast('Saqlandi', null, null, 2000);
+      if (!saveSettings()) return;
+      toast('Shu qurilmada saqlandi', null, null, 2000);
     }
     else if (act === 'clearex') clearExamples();
     else if (act === 'goal') {
@@ -888,22 +899,27 @@ window.HPM_CONFIG = {
       $('settings').scrollIntoView({ behavior: 'smooth', block: 'center' });
       $('goalIn').focus();
     }
-    else if (act === 'savegoal') { settings.goal = digits($('goalIn').value); saveSettings(); toast('Reja saqlandi', null, null, 2000); }
+    else if (act === 'savegoal') { var goal = digits($('goalIn').value); if (!Number.isFinite(goal)) { toast('Rejani butun musbat raqamda yozing'); return; } settings.goal = goal; if (saveSettings()) toast('Reja shu qurilmada saqlandi'); }
     else if (act === 'addprod') addProduct();
     else if (act === 'delprod') delProduct(id);
   });
 
   function moneyInput(el) {
     el.addEventListener('input', function () {
-      var dg = this.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-      this.value = dg ? fmt(parseInt(dg, 10)) : '';
+      var n = digits(this.value);
+      if (Number.isFinite(n) && this.value.trim()) this.value = fmt(n);
     });
   }
   moneyInput($('amount')); moneyInput($('goalIn')); moneyInput($('pprice')); moneyInput($('proIn')); moneyInput($('maxIn'));
 
   $('ownPw').addEventListener('keydown', function (e) { if (e.key === 'Enter') ownerLogin(); });
 
+  loadLocal();
   initAuth();
   render();
   connect();
+  setInterval(function () { render(); }, 60000);
+  window.addEventListener('online', flushPending);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { render(); flushPending(); } });
 })();
+

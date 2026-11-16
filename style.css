@@ -391,3 +391,11 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .plist .btn { min-height: 38px; padding: 0 14px; }
 .plist small { font-size: 12.5px; letter-spacing: 0.02em; }
+
+
+/* Comfortable mobile reading and touch targets. */
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  .status, .who .note, .ins .k, .ins .n, .hrow.head, .fld label { font-size: 14px; }
+  .del, .h-edit, .plist .btn { min-width: 44px; min-height: 44px; }
+}

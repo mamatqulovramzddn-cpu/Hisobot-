@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function owner() {
+      return signedIn() && request.auth.token.email.lower() == 'mamatqulovramzddn@gmail.com';
+    }
+    function account(uid) { return signedIn() && request.auth.uid == uid; }
+    function entryValid(v) {
+      return v.keys().hasAll(['date', 'entry']) && v.keys().hasOnly(['date', 'entry'])
+        && v.date is string && v.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && v.entry.keys().hasAll(['id', 'kind', 'amount', 'ts'])
+        && v.entry.keys().hasOnly(['id', 'kind', 'amount', 'ts', 'note', 'done', 'example'])
+        && v.entry.id is string && v.entry.id.matches('^[a-zA-Z0-9_-]{1,120}$')
+        && v.entry.kind in ['sale', 'ret', 'ans', 'miss']
+        && v.entry.amount is int && v.entry.amount >= 0 && v.entry.amount <= 1000000000000
+        && v.entry.ts is number
+        && (!('note' in v.entry) || (v.entry.note is string && v.entry.note.size() <= 60))
+        && (!('done' in v.entry) || v.entry.done is bool)
+        && (!('example' in v.entry) || v.entry.example is bool);
+    }
+    match /users/{uid}/entries/{id} {
+      allow read, delete: if account(uid);
+      allow create, update: if account(uid) && entryValid(request.resource.data)
+        && request.resource.data.entry.id == id;
+    }
+    match /users/{uid}/settings/main {
+      allow read: if account(uid);
+      allow create, update: if account(uid)
+        && request.resource.data.keys().hasAll(['goal', 'products'])
+        && request.resource.data.keys().hasOnly(['goal', 'products'])
+        && request.resource.data.goal is int && request.resource.data.goal >= 0
+        && request.resource.data.goal <= 1000000000000
+        && request.resource.data.products is list && request.resource.data.products.size() <= 1000;
+    }
+    match /subscriptions/{email} {
+      allow read: if owner() || (signedIn() && request.auth.token.email.lower() == email);
+      allow delete: if owner();
+      allow create, update: if owner()
+        && request.resource.data.keys().hasAll(['plan', 'expiresAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['plan', 'expiresAt', 'updatedAt'])
+        && request.resource.data.plan in ['pro', 'max']
+        && request.resource.data.expiresAt is string
+        && (request.resource.data.expiresAt == '' || request.resource.data.expiresAt.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        && request.resource.data.updatedAt == request.time;
+    }
+    match /public/settings {
+      allow read: if true;
+      allow create, update: if owner()
+        && request.resource.data.keys().hasAll(['proPrice', 'maxPrice', 'tg', 'adTitle', 'adText', 'adLink'])
+        && request.resource.data.keys().hasOnly(['proPrice', 'maxPrice', 'tg', 'adTitle', 'adText', 'adLink'])
+        && request.resource.data.proPrice is int && request.resource.data.proPrice > 0
+        && request.resource.data.maxPrice is int && request.resource.data.maxPrice > 0
+        && request.resource.data.tg is string && request.resource.data.tg.size() <= 40
+        && request.resource.data.adTitle is string && request.resource.data.adTitle.size() <= 60
+        && request.resource.data.adText is string && request.resource.data.adText.size() <= 160
+        && request.resource.data.adLink is string
+        && (request.resource.data.adLink == '' || request.resource.data.adLink.matches('^https://.*'));
+    }
+  }
+}
